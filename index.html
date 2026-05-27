@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudyRank - Conta Confirmada</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #13111E, #1E1B2E);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #2A273F;
+      border-radius: 24px;
+      padding: 48px 40px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .emoji { font-size: 64px; margin-bottom: 16px; }
+    h1 {
+      color: #7C6FF7;
+      font-size: 28px;
+      font-weight: 900;
+      margin-bottom: 12px;
+      letter-spacing: -1px;
+    }
+    p {
+      color: #9B99B0;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+    .btn {
+      background: linear-gradient(135deg, #5B4FE9, #7C6FF7);
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointerx
+      text-decoration: none;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="emoji">📚</div>
+    <h1>Conta Confirmada!</h1>
+    <p>O teu email foi verificado com sucesso. Já podes entrar na app StudyRank e começar a estudar!</p>
+   <a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>
+  </div>
+</body>
+</html>
