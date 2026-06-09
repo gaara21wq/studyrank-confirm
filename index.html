@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StudyRank</title>
+  <title>StudyRank - Conta Confirmada</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
+    body {
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(135deg, #13111E, #1E1B2E);
       min-height: 100vh;
@@ -24,169 +24,39 @@
       box-shadow: 0 20px 60px rgba(0,0,0,0.4);
     }
     .emoji { font-size: 64px; margin-bottom: 16px; }
-    h1 { color: #7C6FF7; font-size: 28px; font-weight: 900; margin-bottom: 12px; letter-spacing: -1px; }
-    p { color: #9B99B0; font-size: 16px; line-height: 1.6; margin-bottom: 32px; }
+    h1 {
+      color: #7C6FF7;
+      font-size: 28px;
+      font-weight: 900;
+      margin-bottom: 12px;
+      letter-spacing: -1px;
+    }
+    p {
+      color: #9B99B0;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
     .btn {
       background: linear-gradient(135deg, #5B4FE9, #7C6FF7);
-      color: white; border: none; padding: 16px 32px;
-      border-radius: 14px; font-size: 16px; font-weight: 800;
-      cursor: pointer; text-decoration: none; display: inline-block;
-    }
-    input {
-      width: 100%; padding: 14px 16px; border-radius: 14px;
-      border: none; background: #13111E; color: white;
-      font-size: 15px; margin-bottom: 12px; outline: none;
-    }
-    input::placeholder { color: #5C5A72; }
-    .erro {
-      color: #f87171; font-size: 13px; margin-bottom: 12px;
-      background: rgba(248,113,113,0.1); padding: 8px 12px;
-      border-radius: 10px; display: none;
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="card">
     <div class="emoji">📚</div>
-    <h1 id="titulo">A carregar...</h1>
-    <p id="descricao"></p>
-    <div class="erro" id="erro"></div>
-    <div id="conteudo"></div>
+    <h1>Conta Confirmada!</h1>
+    <p>O teu email foi verificado com sucesso. Já podes entrar na app StudyRank e começar a estudar!</p>
+    <a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>
   </div>
-
-  <script>
-    const SUPABASE_URL = 'https://ecwbxxjinjopnguygtgb.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjd2J4eGppbmpvcG5ndXlndGdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4MzkzNTUsImV4cCI6MjA5NDQxNTM1NX0.ZsxM-9WzD6ZJ6SMigVtjDwDOzApDWEeL9hj1Z9P2BNU';
-
-    const { createClient } = supabase;
-    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const params = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
-
-    const errorCode = params.get('error_code') || hashParams.get('error_code');
-    const code = params.get('code');
-    const accessToken = hashParams.get('access_token');
-
-    const titulo = document.getElementById('titulo');
-    const descricao = document.getElementById('descricao');
-    const conteudo = document.getElementById('conteudo');
-    const erroDiv = document.getElementById('erro');
-
-import { type SupportedStorage } from '@supabase/supabase-js';
-const supportsLocalStorage = () => true
-// ---cut---
-const customStorageAdapter: SupportedStorage = {
-    getItem: (key) => {
-    if (!supportsLocalStorage()) {
-        // Configure alternate storage
-        return null
-    }
-    return globalThis.localStorage.getItem(key)
-    },
-    setItem: (key, value) => {
-    if (!supportsLocalStorage()) {
-        // Configure alternate storage here
-        return
-    }
-    globalThis.localStorage.setItem(key, value)
-    },
-    removeItem: (key) => {
-    if (!supportsLocalStorage()) {
-        // Configure alternate storage here
-        return
-    }
-    globalThis.localStorage.removeItem(key)
-    },
-}
-    
-    function mostrarErro(msg) {
-      erroDiv.textContent = msg;
-      erroDiv.style.display = 'block';
-    }
-
-    function mostrarFormulario() {
-      titulo.textContent = 'Nova password';
-      descricao.textContent = 'Escolhe uma nova password para a tua conta.';
-      conteudo.innerHTML = `
-        <input type="password" id="pass1" placeholder="Nova password" />
-        <input type="password" id="pass2" placeholder="Confirmar password" />
-        <br/>
-        <button class="btn" onclick="guardarPassword()">Guardar password</button>
-      `;
-    }
-
-    async function init() {
-      // Link expirado ou inválido
-      if (errorCode) {
-        titulo.textContent = 'Link expirado';
-        descricao.textContent = 'Este link já não é válido. Volta à app e pede um novo.';
-        conteudo.innerHTML = `<a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>`;
-        return;
-      }
-
-      // Novo formato: ?code=... — trocar IMEDIATAMENTE por sessão
-      if (code) {
-        titulo.textContent = 'A verificar...';
-        descricao.textContent = '';
-        try {
-          const { data, error } = await client.auth.exchangeCodeForSession(code);
-alert("error -> " + error);
-          
-          if (error) throw error;
-          // Sessão estabelecida com sucesso, mostrar formulário
-          mostrarFormulario();
-        } catch (e) {
-          titulo.textContent = 'Link expirado';
-          descricao.textContent = 'Este link já não é válido. Volta à app e pede um novo.';
-          conteudo.innerHTML = `<a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>`;
-        }
-        return;
-      }
-
-      // Formato antigo: #access_token=...
-      if (accessToken) {
-        mostrarFormulario();
-        return;
-      }
-
-      // Confirmação de conta normal
-      titulo.textContent = 'Conta Confirmada!';
-      descricao.textContent = 'O teu email foi verificado com sucesso. Já podes entrar na app StudyRank e começar a estudar!';
-      conteudo.innerHTML = `<a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>`;
-    }
-
-    init();
-
-    async function guardarPassword() {
-      const pass1 = document.getElementById('pass1').value;
-      const pass2 = document.getElementById('pass2').value;
-
-      if (pass1.length < 7) {
-        mostrarErro('A password precisa ter no mínimo 7 caracteres');
-        return;
-      }
-      if (pass1 !== pass2) {
-        mostrarErro('As passwords não coincidem');
-        return;
-      }
-
-      try {
-        const { error } = await client.auth.updateUser({ password: pass1 });
-
-        if (!error) {
-          titulo.textContent = 'Password alterada!';
-          descricao.textContent = 'A tua password foi atualizada com sucesso. Já podes entrar na app.';
-          conteudo.innerHTML = `<a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>`;
-          erroDiv.style.display = 'none';
-        } else {
-          mostrarErro('Erro ao alterar a password. Tenta novamente.');
-        }
-      } catch (e) {
-        mostrarErro('Erro de ligação. Tenta novamente.');
-      }
-    }
-  </script>
 </body>
 </html>
