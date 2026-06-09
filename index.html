@@ -6,7 +6,7 @@
   <title>StudyRank</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
+    body { 
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(135deg, #13111E, #1E1B2E);
       min-height: 100vh;
@@ -100,11 +100,14 @@
       }
 
       // Novo formato: ?code=... — trocar IMEDIATAMENTE por sessão
+      alert("code -> " + code);
       if (code) {
         titulo.textContent = 'A verificar...';
         descricao.textContent = '';
         try {
           const { data, error } = await client.auth.exchangeCodeForSession(code);
+alert("error -> " + error);
+          
           if (error) throw error;
           // Sessão estabelecida com sucesso, mostrar formulário
           mostrarFormulario();
