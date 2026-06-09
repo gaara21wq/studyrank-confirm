@@ -84,7 +84,7 @@
 
   <script>
     const SUPABASE_URL = 'https://ecwbxxjinjopnguygtgb.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjd2J4eGppbmpvcG5ndXlndGdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4MzkzNTUsImV4cCI6MjA5NDQxNTM1NX0.ZsxM-9WzD6ZJ6SMigVtjDwDOzApDWEeL9hj1Z9P2BNU';
+    const SUPABASE_ANON_KEY = 'TUA_ANON_KEY_AQUI';
 
     const { createClient } = supabase;
     const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -128,25 +128,9 @@
         return;
       }
 
-      // Novo formato: ?code=... (PKCE flow)
+      // Novo formato: ?code=... (PKCE flow) — só aparece em reset de password
       if (code) {
-        try {
-          const { data, error } = await client.auth.exchangeCodeForSession(code);
-          if (error) throw error;
-
-          // Verificar se é recovery ou confirmação
-          if (data.user && window.location.href.includes('type=recovery')) {
-            mostrarFormulario();
-          } else if (data.user) {
-            // Pode ser recovery mesmo sem o parâmetro type
-            // Verificar pelo URL original do email
-            mostrarFormulario();
-          }
-        } catch (e) {
-          titulo.textContent = 'Link expirado';
-          descricao.textContent = 'Este link já não é válido. Volta à app e pede um novo.';
-          conteudo.innerHTML = `<a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>`;
-        }
+        mostrarFormulario();
         return;
       }
 
@@ -178,6 +162,15 @@
       }
 
       try {
+        // Trocar o code por sessão antes de atualizar a password
+        if (code) {
+          const { error: sessionError } = await client.auth.exchangeCodeForSession(code);
+          if (sessionError) {
+            mostrarErro('Link expirado. Pede um novo na app.');
+            return;
+          }
+        }
+
         const { error } = await client.auth.updateUser({ password: pass1 });
 
         if (!error) {
