@@ -49,8 +49,6 @@
       text-decoration: none;
       display: inline-block;
     }
-
-    /* Reset de password */
     input {
       width: 100%;
       padding: 14px 16px;
@@ -73,6 +71,7 @@
       display: none;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="card" id="card">
@@ -84,13 +83,20 @@
   </div>
 
   <script>
+    const SUPABASE_URL = 'https://ecwbxxjinjopnguygtgb.supabase.co';
+    const SUPABASE_ANON_KEY = 'TUA_ANON_KEY_AQUI';
+
+    const { createClient } = supabase;
+    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     const params = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
 
-    const tipo = params.get('type') || hashParams.get('type');
     const errorCode = params.get('error_code') || hashParams.get('error_code');
-    const accessToken = hashParams.get('access_token');
+    const code = params.get('code'); // novo formato do Supabase
+    const accessToken = hashParams.get('access_token'); // formato antigo
     const refreshToken = hashParams.get('refresh_token');
+    const tipo = params.get('type') || hashParams.get('type');
 
     const titulo = document.getElementById('titulo');
     const descricao = document.getElementById('descricao');
@@ -102,14 +108,7 @@
       erroDiv.style.display = 'block';
     }
 
-    // ── Link expirado ou inválido ──
-    if (errorCode === 'otp_expired' || errorCode === 'access_denied') {
-      titulo.textContent = 'Link expirado';
-      descricao.textContent = 'Este link já não é válido. Volta à app e pede um novo.';
-      conteudo.innerHTML = `<a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>`;
-
-    // ── Reset de password ──
-    } else if (tipo === 'recovery' || accessToken) {
+    function mostrarFormulario() {
       titulo.textContent = 'Nova password';
       descricao.textContent = 'Escolhe uma nova password para a tua conta.';
       conteudo.innerHTML = `
@@ -118,13 +117,52 @@
         <br/>
         <button class="btn" onclick="guardarPassword()">Guardar password</button>
       `;
+    }
 
-    // ── Confirmação de conta ──
-    } else {
+    async function init() {
+      // Link expirado ou inválido
+      if (errorCode) {
+        titulo.textContent = 'Link expirado';
+        descricao.textContent = 'Este link já não é válido. Volta à app e pede um novo.';
+        conteudo.innerHTML = `<a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>`;
+        return;
+      }
+
+      // Novo formato: ?code=... (PKCE flow)
+      if (code) {
+        try {
+          const { data, error } = await client.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+
+          // Verificar se é recovery ou confirmação
+          if (data.user && window.location.href.includes('type=recovery')) {
+            mostrarFormulario();
+          } else if (data.user) {
+            // Pode ser recovery mesmo sem o parâmetro type
+            // Verificar pelo URL original do email
+            mostrarFormulario();
+          }
+        } catch (e) {
+          titulo.textContent = 'Link expirado';
+          descricao.textContent = 'Este link já não é válido. Volta à app e pede um novo.';
+          conteudo.innerHTML = `<a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>`;
+        }
+        return;
+      }
+
+      // Formato antigo: #access_token=...
+      if (accessToken) {
+        mostrarFormulario();
+        return;
+      }
+
+      // Confirmação de conta normal
       titulo.textContent = 'Conta Confirmada!';
       descricao.textContent = 'O teu email foi verificado com sucesso. Já podes entrar na app StudyRank e começar a estudar!';
       conteudo.innerHTML = `<a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>`;
     }
+
+    init();
 
     async function guardarPassword() {
       const pass1 = document.getElementById('pass1').value;
@@ -140,27 +178,9 @@
       }
 
       try {
-        const SUPABASE_URL = 'https://ecwbxxjinjopnguygtgb.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjd2J4eGppbmpvcG5ndXlndGdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4MzkzNTUsImV4cCI6MjA5NDQxNTM1NX0.ZsxM-9WzD6ZJ6SMigVtjDwDOzApDWEeL9hj1Z9P2BNU';
+        const { error } = await client.auth.updateUser({ password: pass1 });
 
-        // Primeiro definir a sessão com o token do link
-        await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
-          body: JSON.stringify({ refresh_token: refreshToken })
-        });
-
-        const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${accessToken}`
-          },
-          body: JSON.stringify({ password: pass1 })
-        });
-
-        if (res.ok) {
+        if (!error) {
           titulo.textContent = 'Password alterada!';
           descricao.textContent = 'A tua password foi atualizada com sucesso. Já podes entrar na app.';
           conteudo.innerHTML = `<a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>`;
