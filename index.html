@@ -74,6 +74,33 @@
     const conteudo = document.getElementById('conteudo');
     const erroDiv = document.getElementById('erro');
 
+import { type SupportedStorage } from '@supabase/supabase-js';
+const supportsLocalStorage = () => true
+// ---cut---
+const customStorageAdapter: SupportedStorage = {
+    getItem: (key) => {
+    if (!supportsLocalStorage()) {
+        // Configure alternate storage
+        return null
+    }
+    return globalThis.localStorage.getItem(key)
+    },
+    setItem: (key, value) => {
+    if (!supportsLocalStorage()) {
+        // Configure alternate storage here
+        return
+    }
+    globalThis.localStorage.setItem(key, value)
+    },
+    removeItem: (key) => {
+    if (!supportsLocalStorage()) {
+        // Configure alternate storage here
+        return
+    }
+    globalThis.localStorage.removeItem(key)
+    },
+}
+    
     function mostrarErro(msg) {
       erroDiv.textContent = msg;
       erroDiv.style.display = 'block';
