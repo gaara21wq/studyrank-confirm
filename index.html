@@ -49,6 +49,8 @@
       text-decoration: none;
       display: inline-block;
     }
+
+    /* Reset de password */
     input {
       width: 100%;
       padding: 14px 16px;
@@ -60,16 +62,14 @@
       margin-bottom: 12px;
       outline: none;
     }
+    input::placeholder { color: #5C5A72; }
     .erro {
-      color: #ff6b6b;
+      color: #f87171;
       font-size: 13px;
       margin-bottom: 12px;
-      display: none;
-    }
-    .sucesso {
-      color: #6bffb8;
-      font-size: 13px;
-      margin-bottom: 12px;
+      background: rgba(248,113,113,0.1);
+      padding: 8px 12px;
+      border-radius: 10px;
       display: none;
     }
   </style>
@@ -79,6 +79,7 @@
     <div class="emoji">📚</div>
     <h1 id="titulo">A carregar...</h1>
     <p id="descricao"></p>
+    <div class="erro" id="erro"></div>
     <div id="conteudo"></div>
   </div>
 
@@ -87,34 +88,35 @@
     const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
 
     const tipo = params.get('type') || hashParams.get('type');
-    const erro = params.get('error') || hashParams.get('error');
     const errorCode = params.get('error_code') || hashParams.get('error_code');
     const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
 
     const titulo = document.getElementById('titulo');
     const descricao = document.getElementById('descricao');
     const conteudo = document.getElementById('conteudo');
+    const erroDiv = document.getElementById('erro');
+
+    function mostrarErro(msg) {
+      erroDiv.textContent = msg;
+      erroDiv.style.display = 'block';
+    }
 
     // ── Link expirado ou inválido ──
-    if (erro) {
-      titulo.textContent = 'Link inválido';
-      titulo.style.color = '#ff6b6b';
-      document.querySelector('.emoji').textContent = '❌';
-      descricao.textContent = errorCode === 'otp_expired'
-        ? 'O link expirou. Volta à app e pede um novo link.'
-        : 'Ocorreu um erro. Volta à app e tenta novamente.';
+    if (errorCode === 'otp_expired' || errorCode === 'access_denied') {
+      titulo.textContent = 'Link expirado';
+      descricao.textContent = 'Este link já não é válido. Volta à app e pede um novo.';
       conteudo.innerHTML = `<a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>`;
 
     // ── Reset de password ──
     } else if (tipo === 'recovery' || accessToken) {
       titulo.textContent = 'Nova password';
-      descricao.textContent = 'Introduz a tua nova password.';
+      descricao.textContent = 'Escolhe uma nova password para a tua conta.';
       conteudo.innerHTML = `
         <input type="password" id="pass1" placeholder="Nova password" />
         <input type="password" id="pass2" placeholder="Confirmar password" />
-        <div class="erro" id="erro">As passwords não coincidem ou são muito curtas (mín. 7 caracteres).</div>
-        <div class="sucesso" id="sucesso">Password alterada! Já podes entrar na app.</div>
-        <button class="btn" onclick="alterarPassword()">Guardar password</button>
+        <br/>
+        <button class="btn" onclick="guardarPassword()">Guardar password</button>
       `;
 
     // ── Confirmação de conta ──
@@ -124,46 +126,50 @@
       conteudo.innerHTML = `<a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>`;
     }
 
-    async function alterarPassword() {
+    async function guardarPassword() {
       const pass1 = document.getElementById('pass1').value;
       const pass2 = document.getElementById('pass2').value;
-      const erroDiv = document.getElementById('erro');
-      const sucessoDiv = document.getElementById('sucesso');
 
-      erroDiv.style.display = 'none';
-      sucessoDiv.style.display = 'none';
-
-      if (pass1.length < 7 || pass1 !== pass2) {
-        erroDiv.style.display = 'block';
+      if (pass1.length < 7) {
+        mostrarErro('A password precisa ter no mínimo 7 caracteres');
+        return;
+      }
+      if (pass1 !== pass2) {
+        mostrarErro('As passwords não coincidem');
         return;
       }
 
       try {
         const SUPABASE_URL = 'https://ecwbxxjinjopnguygtgb.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjd2J4eGppbmpvcG5ndXlndGdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3NTk5NjcsImV4cCI6MjA2MzMzNTk2N30.j3tUnHQ07N_8Rf8-vfuCSJr9xBzKAkBJ1bGAmVnRkpo';
+        const SUPABASE_ANON_KEY = 'TUA_ANON_KEY_AQUI';
+
+        // Primeiro definir a sessão com o token do link
+        await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+          body: JSON.stringify({ refresh_token: refreshToken })
+        });
 
         const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${accessToken}`,
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${accessToken}`
           },
-          body: JSON.stringify({ password: pass1 }),
+          body: JSON.stringify({ password: pass1 })
         });
 
         if (res.ok) {
-          sucessoDiv.style.display = 'block';
-          document.getElementById('pass1').style.display = 'none';
-          document.getElementById('pass2').style.display = 'none';
-          document.querySelector('button').style.display = 'none';
+          titulo.textContent = 'Password alterada!';
+          descricao.textContent = 'A tua password foi atualizada com sucesso. Já podes entrar na app.';
+          conteudo.innerHTML = `<a class="btn" href="io.supabase.studyrank://login-callback">Abrir StudyRank</a>`;
+          erroDiv.style.display = 'none';
         } else {
-          erroDiv.textContent = 'Erro ao alterar a password. Tenta novamente.';
-          erroDiv.style.display = 'block';
+          mostrarErro('Erro ao alterar a password. Tenta novamente.');
         }
       } catch (e) {
-        erroDiv.textContent = 'Erro de ligação. Tenta novamente.';
-        erroDiv.style.display = 'block';
+        mostrarErro('Erro de ligação. Tenta novamente.');
       }
     }
   </script>
